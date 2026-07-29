@@ -1,59 +1,87 @@
 # Thermodynamic Cycle Calculator
 
-An interactive, browser-based tool for building and analyzing thermodynamic cycles — Brayton, Rankine, Otto, Diesel, Stirling, or any custom mix of isentropic / isobaric / isochoric / isothermal / polytropic processes. Everything updates live: state points, T-s and P-v diagrams, net work, efficiency, heat in/out, back-work ratio.
+> **An interactive, browser-based simulator for constructing, visualizing, and analyzing thermodynamic cycles in real time.**
 
-Built by **Javid Bilalov** (*thermodynamics*) & **Mard Jafarzada** (*software*).
+[![Live Demo](https://img.shields.io/badge/Demo-Live%20App-brightgreen?style=for-the-badge)](https://javid-10.github.io/thermodynamic-cycle-calculator/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 
 ---
 
-## Why We Built It
+## Overview
 
-Most cycle calculators lock you into one preset cycle and hide the math. We wanted a tool that:
-* Lets you build any cycle from the five classical process types.
-* Shows its work — every number traces back to a specific equation.
+Most online cycle calculators lock users into rigid presets and obscure the underlying thermodynamic relations. We built this tool to give physics and chemistry students, Olympiad competitors, and educators full freedom to model both classical and custom cycles with complete mathematical transparency.
+
+* **Flexible Cycle Construction:** Build cycles from any combination of five fundamental process types (isentropic, isobaric, isochoric, isothermal, and polytropic).
+* **Live Dynamic Visualization:** Real-time generation and updates of $T\text{-}s$ (Temperature–Entropy) and $P\text{-}v$ (Pressure–Specific Volume) diagrams.
+* **Instant State & Metric Solvers:** Solves unknown state variables ($P, T, v$), net work ($W_{\text{net}}$), thermal efficiency ($\eta$), heat transfers ($Q_{\text{in}}, Q_{\text{out}}$), and back-work ratio.
+
+---
+
+## Preview
+
+![Thermodynamic Cycle Calculator Dashboard](YOUR_IMAGE_OR_GIF_URL_HERE.png)
+*Figure 1: Real-time analysis of an ideal Otto Cycle with dynamic T-s and P-v plotting.*
+
+---
+
+## Authors & Collaboration
+
+* **Javid Bilalov** — *Thermodynamics Modeling, Theoretical Physics & Solvers*
+* **Mard Jafarzada** — *Software Architecture, Web UI & Graphical Engine*
 
 ---
 
 ## Quick Start
 
-1. **Open `index.html`** — no install, works in any browser.
-2. **Pick a preset**, or start from scratch and add state points.
-3. **At each point**, set P or T (leave the other blank — the solver fills it in).
-4. **Pick the process type** connecting each pair of points.
-5. **Done!** Diagrams and results update as you go.
+1. **Launch:** Open `index.html` in any web browser—no installation, build tools, or dependencies required.
+2. **Select or Build:** Choose a pre-configured cycle (Brayton, Rankine, Otto, Diesel, Stirling) or create a custom cycle from scratch by adding state points.
+3. **Define State Variables:** Input known parameters ($P$ or $T$) at state points—the built-in solver automatically computes missing state variables.
+4. **Specify Processes:** Assign process types connecting adjacent state points.
+5. **Analyze:** Watch diagrams, work values, and efficiency update instantaneously as parameters change.
 
 ---
 
-## The Five Processes at a Glance
+## Governing Thermodynamic Relations
 
-| Process | Relation | Heat ($q$) | Entropy ($\Delta s$) |
+Every value calculated in the tool traces back directly to foundational thermodynamic relations.
+
+| Process | Relation | Heat ($q$) | Entropy Change ($\Delta s$) |
 | :--- | :--- | :--- | :--- |
 | **Isentropic** | $P = \text{const}$ | $0$ | $0$ |
-| **Isobaric** | $T_2 / T_1 = (P_2 / P_1)^{(\gamma - 1)/\gamma}$ | $c_p \cdot \Delta T$ | $c_p \cdot \ln(T_2 / T_1)$ |
-| **Isochoric** | $P / T = \text{const}$ | $c_v \cdot \Delta T$ | $c_v \cdot \ln(T_2 / T_1)$ |
-| **Isothermal** | $T = \text{const}$ | $-R \cdot T \cdot \ln(P_2 / P_1)$ | $-R \cdot \ln(P_2 / P_1)$ |
-| **Polytropic** | $T_2 / T_1 = (P_2 / P_1)^{(n - 1)/n}$ | $c_p \cdot \frac{n - \gamma}{\gamma(n - 1)} \cdot \Delta T$ | $c_p \cdot \frac{n - \gamma}{\gamma(n - 1)} \cdot \ln(T_2 / T_1)$ |
+| **Isobaric** | $\frac{T_2}{T_1} = \left(\frac{P_2}{P_1}\right)^{\frac{\gamma - 1}{\gamma}}$ | $c_p \cdot \Delta T$ | $c_p \cdot \ln\left(\frac{T_2}{T_1}\right)$ |
+| **Isochoric** | $\frac{P}{T} = \text{const}$ | $c_v \cdot \Delta T$ | $c_v \cdot \ln\left(\frac{T_2}{T_1}\right)$ |
+| **Isothermal** | $T = \text{const}$ | $-R \cdot T \cdot \ln\left(\frac{P_2}{P_1}\right)$ | $-R \cdot \ln\left(\frac{P_2}{P_1}\right)$ |
+| **Polytropic** | $\frac{T_2}{T_1} = \left(\frac{P_2}{P_1}\right)^{\frac{n - 1}{n}}$ | $c_p \cdot \frac{n - \gamma}{\gamma(n - 1)} \cdot \Delta T$ | $c_p \cdot \frac{n - \gamma}{\gamma(n - 1)} \cdot \ln\left(\frac{T_2}{T_1}\right)$ |
 
-> **Note:** $W_{net} = Q_{in} - Q_{out}$ (first law) — always exact, no matter how any single process's work is modeled.
-
----
-
-## One Subtlety Worth Knowing
-
-The polytropic formulas have $\gamma$ in the denominator — not a typo. We checked it two ways: algebraically, and by confirming the limits make sense ($n \to \gamma$ gives $0$, matching isentropic; $n \to 0$ or $\infty$ recovers isobaric/isochoric heat). 
-
-Separately: isentropic work here assumes an **open, steady-flow system** (turbine/compressor) — correct for Brayton/Rankine. A closed piston-cylinder cycle (Otto/Diesel) would technically use $c_v$ instead of $c_p$ for that leg. This doesn't touch $W_{net}$ or efficiency (both depend only on heat, which is the same either way) — it only affects the Turbine/Compressor work split for piston-cycle presets. We left it as a flagged simplification rather than adding a hidden system-type switch.
+> **Note on First Law Conservation:**  
+> Net work is calculated via $W_{\text{net}} = Q_{\text{in}} - Q_{\text{out}}$. This application of the First Law of Thermodynamics guarantees exact work output regardless of how individual process work terms are formulated.
 
 ---
 
-## Known Limits
+## Key Theoretical Considerations
 
-* No cap on number of state points.
-* Won't warn you if you manually enter inconsistent P/T at both ends of an isobaric/isochoric leg — it'll compute something, just maybe not what the label says.
-* Polytropic index near exactly $1$ is a genuine mathematical singularity (handled as isothermal); values very close to but not exactly $1$ can look numerically extreme.
+### Polytropic Formulation
+The denominator in the polytropic heat equation contains $\gamma$ by design:
+$$q = c_p \cdot \frac{n - \gamma}{\gamma(n - 1)} \cdot \Delta T$$
+This has been verified both algebraically and via limiting analysis:
+* As $n \to \gamma$, heat transfer $q \to 0$, recovering the **isentropic** process.
+* As $n \to 0$ or $n \to \infty$, the formulation properly reduces to **isobaric** and **isochoric** heat transfer models.
+
+### Open vs. Closed System Assumption
+Isentropic work within the simulator models an **open, steady-flow system** (e.g., turbines and compressors), which aligns with Brayton and Rankine cycles. For closed piston-cylinder systems (e.g., Otto or Diesel cycles), theoretical process work utilizes $c_v$ rather than $c_p$. 
+
+Because overall cycle efficiency ($\eta$) and net work ($W_{\text{net}}$) depend exclusively on boundary heat flows ($Q_{\text{in}}$ and $Q_{\text{out}}$), this assumption **does not impact overall cycle metrics**, though it is noted for precise turbine/compressor work split interpretations.
+
+---
+
+## Current Scope & Edge Cases
+
+* **State Points:** Supports arbitrary system sizes with no hard ceiling on state point additions.
+* **Input Validation:** User-entered inconsistent $P/T$ values across isobaric or isochoric boundaries will be calculated numerically without explicit failure warnings.
+* **Polytropic Singularities:** Near $n = 1$ (isothermal limit), calculations evaluate as true isothermal processes; values extremely close to $n = 1$ may exhibit numerical sensitivity.
 
 ---
 
 ## License
 
-MIT License
+This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
