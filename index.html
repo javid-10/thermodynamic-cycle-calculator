@@ -1,0 +1,1418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Thermodynamic Cycle Calculator</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:#ffffff; --bg2:#f5f4f0; --bg3:#eeede8; --tx:#1a1a18; --tx2:#6b6a65;
+      --bd:rgba(0,0,0,0.12); --bd2:rgba(0,0,0,0.2); --blue:#185FA5; --blue-bg:#E6F1FB;
+      --teal:#0F6E56; --red:#A32D2D; --r:8px; --rl:12px;
+    }
+    @media (prefers-color-scheme:dark) {
+      :root { --bg:#1e1e1c; --bg2:#2a2a27; --bg3:#242422; --tx:#f0efe8; --tx2:#9a9992;
+        --bd:rgba(255,255,255,0.1); --bd2:rgba(255,255,255,0.2); --blue:#85B7EB;
+        --blue-bg:#0C447C; --teal:#5DCAA5; --red:#F09595; }
+    }
+    body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; color:var(--tx);
+      background:var(--bg3); min-height:100vh; padding:2rem 1rem; line-height:1.5; }
+    .page { max-width:1100px; margin:0 auto; }
+    header { margin-bottom:1.25rem; }
+    header h1 { font-size:24px; font-weight:500; margin-bottom:4px; }
+    header p  { font-size:14px; color:var(--tx2); }
+    .preset-row { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:1rem; align-items:center; }
+    .preset-label { font-size:12px; color:var(--tx2); white-space:nowrap; }
+    .preset-btn { font-size:12px; padding:4px 12px; border:0.5px solid var(--bd2); border-radius:var(--r);
+      background:var(--bg); color:var(--tx2); cursor:pointer; transition:border-color .1s,color .1s; }
+    .preset-btn:hover  { border-color:var(--blue); color:var(--blue); }
+    .preset-btn.active { border-color:var(--blue); color:var(--blue); background:var(--blue-bg); }
+    .layout { display:grid; grid-template-columns:300px minmax(0,1fr); gap:12px; align-items:start; }
+    @media (max-width:760px) { .layout { grid-template-columns:1fr; } }
+    .left-col { display:flex; flex-direction:column; gap:12px; }
+    .card { background:var(--bg); border:0.5px solid var(--bd); border-radius:var(--rl); padding:1rem 1.25rem; }
+    .section-label { font-size:11px; font-weight:500; text-transform:uppercase; letter-spacing:.06em;
+      color:var(--tx2); padding-bottom:8px; border-bottom:0.5px solid var(--bd); margin-bottom:10px; }
+    hr.sep { border:none; border-top:0.5px solid var(--bd); margin:12px 0; }
+    .slider-group { display:flex; flex-direction:column; gap:4px; margin-bottom:10px; }
+    .slider-header { display:flex; justify-content:space-between; align-items:center; gap:6px; }
+    .slider-lbl  { font-size:13px; color:var(--tx); flex-shrink:0; }
+    .slider-unit { font-size:11px; color:var(--tx2); margin-left:1px; }
+    .slider-num  { width:62px; height:26px; background:var(--bg2); border:0.5px solid var(--bd2);
+      border-radius:var(--r); color:var(--tx); font-size:12px; font-weight:500;
+      padding:0 6px; text-align:right; flex-shrink:0; }
+    .slider-num:focus { outline:none; border-color:var(--blue); }
+    input[type=range] { -webkit-appearance:none; appearance:none; width:100%; height:4px;
+      border-radius:2px; background:var(--bg3); outline:none; cursor:pointer; border:0.5px solid var(--bd); }
+    input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; appearance:none;
+      width:16px; height:16px; border-radius:50%; background:var(--blue);
+      border:2px solid var(--bg); box-shadow:0 0 0 1px var(--bd2); cursor:pointer; }
+    input[type=range]::-moz-range-thumb { width:16px; height:16px; border-radius:50%;
+      background:var(--blue); border:2px solid var(--bg); cursor:pointer; }
+    select, input[type=number] { background:var(--bg2); border:0.5px solid var(--bd2);
+      border-radius:var(--r); color:var(--tx); font-size:13px; padding:4px 8px; height:30px; }
+    input[type=number].invalid { border-color:var(--red); background:rgba(163,45,45,0.08); }
+    .point-row { display:flex; align-items:center; gap:4px; margin-bottom:6px; }
+    .pt-idx  { font-size:11px; font-weight:500; color:var(--tx2); min-width:20px; flex-shrink:0; text-align:center; }
+    .pt-lbl  { font-size:11px; color:var(--tx2); flex-shrink:0; }
+    .proc-row  { display:flex; align-items:center; gap:5px; margin-bottom:6px; flex-wrap:wrap; padding-left:2px; }
+    .proc-from { font-size:12px; color:var(--tx2); min-width:32px; }
+    .add-btn { border:0.5px solid var(--bd2); border-radius:var(--r); background:var(--bg2); color:var(--tx);
+      font-size:12px; padding:4px 10px; cursor:pointer; height:28px; display:inline-flex; align-items:center; gap:4px; }
+    .del-btn { border:none; border-radius:var(--r); background:transparent; color:var(--red);
+      font-size:14px; padding:0 2px; cursor:pointer; height:28px; display:inline-flex; align-items:center; flex-shrink:0; }
+    .del-btn:hover { background:rgba(163,45,45,0.08); }
+    .proc-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+    .tag { display:inline-block; font-size:10px; padding:2px 5px; border-radius:4px; font-weight:500; }
+    .tag.work { background:#E6F1FB; color:#0C447C; }
+    .tag.heat { background:#FAEEDA; color:#854F0B; }
+    .tag.both { background:#E1F5EE; color:#085041; }
+    @media (prefers-color-scheme:dark) {
+      .tag.work { background:#0C447C; color:#85B7EB; }
+      .tag.heat { background:#633806; color:#FAC775; }
+      .tag.both { background:#085041; color:#5DCAA5; }
+    }
+    .chart-legend { display:flex; flex-wrap:wrap; gap:8px; margin-top:6px; }
+    .legend-item { display:flex; align-items:center; gap:5px; font-size:11px; color:var(--tx2); }
+    .legend-swatch { width:18px; height:3px; border-radius:2px; flex-shrink:0; }
+    .right-col { display:flex; flex-direction:column; gap:12px; }
+    .error { background:#FCEBEB; border:0.5px solid #A32D2D; border-radius:var(--r);
+      padding:10px 14px; font-size:13px; color:#A32D2D; display:none; }
+    @media (prefers-color-scheme:dark) { .error { background:#501313; color:#F09595; border-color:#F09595; } }
+    .metrics { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+    @media (max-width:700px) { .metrics { grid-template-columns:repeat(2,1fr); } }
+    .metric { background:var(--bg); border:0.5px solid var(--bd); border-radius:var(--r); padding:8px 12px; }
+    .mlabel { font-size:11px; color:var(--tx2); margin-bottom:2px; }
+    .mval   { font-size:20px; font-weight:500; color:var(--tx); }
+    .mval.blue { color:var(--blue); }
+    .mval.teal { color:var(--teal); }
+    .mval.red  { color:var(--red); }
+    .charts { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    @media (max-width:560px) { .charts { grid-template-columns:1fr; } }
+    .chart-wrap { position:relative; height:210px; }
+    .states-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:8px; }
+    .st-card { background:var(--bg2); border-radius:var(--r); padding:8px 10px; }
+    .st-name { font-size:11px; font-weight:500; color:var(--tx2); margin-bottom:4px;
+      padding-bottom:3px; border-bottom:0.5px solid var(--bd); display:flex; align-items:center; gap:5px; }
+    .st-dot  { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+    .st-row      { font-size:12px; color:var(--tx); line-height:1.9; }
+    .st-row span { color:var(--tx2); }
+  </style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <h1>Thermodynamic cycle calculator</h1>
+    <p>Configurable state points and process types — results update in real time</p>
+  </header>
+  <div class="preset-row">
+    <span class="preset-label">Presets:</span>
+    <button class="preset-btn" id="pre-brayton"  onclick="loadPreset('brayton')">Brayton</button>
+    <button class="preset-btn" id="pre-rankine"  onclick="loadPreset('rankine')">Rankine</button>
+    <button class="preset-btn" id="pre-otto"     onclick="loadPreset('otto')">Otto</button>
+    <button class="preset-btn" id="pre-diesel"   onclick="loadPreset('diesel')">Diesel</button>
+    <button class="preset-btn" id="pre-stirling" onclick="loadPreset('stirling')">Stirling</button>
+  </div>
+  <div class="layout">
+    <div class="left-col">
+      <div class="card">
+        <div class="section-label">Global parameters</div>
+        <div class="slider-group">
+          <div class="slider-header">
+            <span class="slider-lbl">cₚ<span class="slider-unit"> kJ/(kg·K)</span></span>
+            <input type="number" class="slider-num" id="num-cp" step="0.005" min="0.1" value="1.005">
+          </div>
+          <input type="range" id="g-cp" min="0.5" max="2.5" step="0.005" value="1.005">
+        </div>
+        <div class="slider-group">
+          <div class="slider-header">
+            <span class="slider-lbl">γ</span>
+            <input type="number" class="slider-num" id="num-gamma" step="0.01" min="1.01" value="1.40">
+          </div>
+          <input type="range" id="g-gamma" min="1.05" max="1.80" step="0.01" value="1.40">
+        </div>
+        <div class="slider-group">
+          <div class="slider-header">
+            <span class="slider-lbl">ṁ<span class="slider-unit"> kg/s</span></span>
+            <input type="number" class="slider-num" id="num-m" step="0.5" min="0.01" value="1.0">
+          </div>
+          <input type="range" id="g-m" min="0.5" max="20" step="0.5" value="1">
+        </div>
+      </div>
+      <div class="card">
+        <div class="section-label">State points</div>
+        <div id="points-list"></div>
+        <button class="add-btn" onclick="addPoint()">
+          <i class="ti ti-plus"></i> Add state point
+        </button>
+        <hr class="sep">
+        <div class="section-label">Processes</div>
+        <div id="procs-list"></div>
+        <p style="font-size:11px;color:var(--tx2);margin-top:4px">
+          Last process closes the cycle back to point 1. Leave P or T blank to auto-solve.<br>
+          <strong>Note:</strong> Isothermal processes require both endpoint P values specified.
+        </p>
+      </div>
+    </div>
+    <div class="right-col">
+      <div class="error" id="error"></div>
+      <div class="metrics">
+        <div class="metric"><div class="mlabel">Net work Wₙₑₜ</div><div class="mval blue" id="r-Wnet">—</div></div>
+        <div class="metric"><div class="mlabel">Efficiency η</div><div class="mval teal" id="r-eta">—</div></div>
+        <div class="metric"><div class="mlabel">Heat in Qᵢₙ</div><div class="mval" id="r-Qin">—</div></div>
+        <div class="metric"><div class="mlabel">Heat out Qₒᵤₜ</div><div class="mval" id="r-Qout">—</div></div>
+        <div class="metric"><div class="mlabel">Turbine work Wₜ</div><div class="mval" id="r-Wt">—</div></div>
+        <div class="metric"><div class="mlabel">Compressor work Wc</div><div class="mval" id="r-Wc">—</div></div>
+        <div class="metric"><div class="mlabel">Back work ratio</div><div class="mval" id="r-bwr">—</div></div>
+        <div class="metric"><div class="mlabel">State points</div><div class="mval" id="r-pts">—</div></div>
+      </div>
+      <div class="charts">
+        <div class="card">
+          <div class="section-label">T-s diagram</div>
+          <div class="chart-wrap"><canvas id="ts-canvas"></canvas></div>
+          <div class="chart-legend" id="ts-legend"></div>
+        </div>
+        <div class="card">
+          <div class="section-label">P-v diagram</div>
+          <div class="chart-wrap"><canvas id="pv-canvas"></canvas></div>
+          <div class="chart-legend" id="pv-legend"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="section-label">State points</div>
+        <div class="states-grid" id="states-output"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ════════════════════════════════════════════════════════════════════════════
+   THERMODYNAMIC CYCLE CALCULATOR — Complete rewrite / all bugs fixed
+   ────────────────────────────────────────────────────────────────────────────
+   Bugs fixed vs the original source:
+
+   BUG 1 — Polytropic heat formula had missing γ in denominator.
+            Correct:  q = cp·(n−γ) / (γ·(n−1)) · m·ΔT
+            Original: q = cp·(n−γ) /    (n−1)  · m·ΔT   ← off by factor γ
+            Verification: n=0 (isobaric limit) → correct gives cp·ΔT ✓
+                          n→∞ (isochoric limit) → correct gives cv·ΔT ✓
+
+   BUG 2 — Polytropic entropy offset had the same missing γ factor.
+            Correct:  Δs = cp·(n−γ) / (γ·(n−1)) · ln(T₂/T₁)
+            Both the heat and entropy formulae derive from the same thermodynamic
+            identity: Δs = cv·(n−γ)/(n−1)·ln(T₂/T₁) = cp·(n−γ)/(γ·(n−1))·ln(T₂/T₁)
+
+   BUG 3 — Isothermal work was zeroed out, so Wt / Wc never reflected isothermal
+            contributions (broke Stirling cycle and any mixed cycle).
+            Fix: w = q = −R·T·ln(P₂/P₁) is counted in both Wt/Wc AND Qin/Qout.
+            Wnet = Qin − Qout remains consistent with first law.
+
+   BUG 4 — onPointInput set points[i][key] = lim.min on invalid input, silently
+            corrupting the state and triggering a calculation with a garbage value.
+            Fix: on invalid input the previous valid value is preserved; only the
+            visual "invalid" highlight is applied; no update is dispatched.
+
+   BUG 5 — renderProcs() called update() internally, so renderUI()
+            (which calls renderProcs() then update()) ran the full recalculation
+            twice on every UI rebuild — preset loads, addPoint, removePoint, etc.
+            Fix: update() is called only from renderUI() and scheduleUpdate().
+
+   BUG 6 — refreshCharts() destroyed and recreated both Chart.js instances on
+            every single update (every keystroke / slider tick). This is O(n·STEPS)
+            DOM work per frame — causing lag and occasional crash when the browser
+            couldn't GC the previous canvas context fast enough.
+            Fix: charts are created once (lazily); subsequent updates call
+            chart.data.datasets = newData; chart.update('none') instead.
+
+   BUG 7 — Chart datasets were never filtered for NaN / ±Infinity / non-positive
+            values before being passed to Chart.js. Even a single NaN in a dataset
+            can make Chart.js throw an internal assertion or render garbage axes.
+            Fix: every generated point is checked with isFinite() before inclusion.
+
+   BUG 8 — STEPS was a fixed 80 per process. With 50 state points that produces
+            50 × 80 = 4 000 points per chart per frame — causing severe slowdown.
+            Fix: adaptive STEPS = clamp(800 ÷ n, 20, 80). Larger cycles use fewer
+            curve points per segment; visual quality stays acceptable.
+
+   BUG 9 — safePow / safeLog were absent. Math.pow(x, ±Infinity), Math.pow(0, neg),
+            and Math.log(0) all produce NaN or Infinity which then cascades through
+            the entire solver, producing wrong state values and corrupt chart data.
+            Fix: safePow and safeLog return null on any degenerate input.
+
+   BUG 10 — The iterative solver used a fixed 30 passes regardless of cycle length.
+             For a 50-state cycle the worst-case dependency chain can require up to
+             n passes. Fix: PASSES = max(30, 2·n).
+
+   BUG 11 — Polytropic n = 1 caused division by zero in the solver, heat/work,
+             and entropy formulas (all use 1/(n−1)). Fix: n ≈ 1 is treated as
+             isothermal in all four functions (solver, heat, entropy, P-v datasets).
+
+   BUG 12 — P-v dataset builder passed raw Infinity / NaN points to Chart.js
+             when safePow overflowed (large k exponents).
+             Fix: fin() wrapper on every computed P; negative-or-zero points filtered.
+
+   BUG 13 — The backward isentropic solver branch computed t.T instead of f.T,
+             meaning the isentropic backward pass never actually recovered f.T.
+             Fix: corrected variable reference in bwd() isentropic case.
+
+   Additional improvements:
+   • Debounced updates (50 ms) on text inputs so the solver doesn't fire on every
+     character while the user is still typing.
+   • Smart axis-label formatter (fmtAxisVal) handles values across many decades
+     without producing "1000000.00" or "0.0000".
+   • MIN_POINTS = 3: a 2-state cycle is thermodynamically degenerate (zero area on
+     P-v diagram, zero net work); minimum enforced in removePoint.
+   • Polytropic n validated on input; NaN silently discarded.
+   • Physical clamping applied after every solver propagation step.
+   • Chart creation wrapped in try/catch with full-recreate fallback.
+   • All metric outputs validated for finiteness before display.
+   ════════════════════════════════════════════════════════════════════════════ */
+
+/* ── Constants ── */
+const PROCESS_COLORS = {
+  isentropic: '#3b82f6',
+  isobaric:   '#f97316',
+  isothermal: '#a855f7',
+  isochoric:  '#10b981',
+  polytropic: '#f43f5e',
+};
+
+const PROCESS_TYPES = [
+  { id: 'isentropic', label: 'Isentropic', tag: 'work' },
+  { id: 'isobaric',   label: 'Isobaric',   tag: 'heat' },
+  { id: 'isochoric',  label: 'Isochoric',  tag: 'heat' },
+  { id: 'isothermal', label: 'Isothermal', tag: 'both' },
+  { id: 'polytropic', label: 'Polytropic', tag: 'both' },
+];
+
+const LIMITS     = { T: { min: 1e-3, max: 1e7 }, P: { min: 1e-3, max: 1e7 } };
+const MIN_POINTS = 3;   // minimum cycle: 3 state points
+
+/* ════════════════════════════════════════════════════
+   UTILITY FUNCTIONS
+════════════════════════════════════════════════════ */
+
+/**
+ * Returns v if it is a finite number; otherwise returns fallback (default null).
+ * Used as a safe wrapper around any arithmetic that might produce NaN/Infinity.
+ */
+function fin(v, fallback = null) {
+  return (typeof v === 'number' && isFinite(v)) ? v : fallback;
+}
+
+/**
+ * Safe Math.pow — returns null instead of NaN or Infinity for degenerate inputs:
+ *   • 0 ^ negative exponent (division-by-zero → Infinity)
+ *   • negative base with fractional exponent (complex result → NaN)
+ *   • any non-finite input
+ *   • result that itself overflows to Infinity
+ */
+function safePow(base, exp) {
+  if (!isFinite(base) || !isFinite(exp)) return null;
+  if (base === 0 && exp < 0)            return null;  // 0^(-x) = Infinity
+  if (base < 0 && exp !== Math.round(exp)) return null; // complex root
+  const r = Math.pow(base, exp);
+  return isFinite(r) ? r : null;
+}
+
+/**
+ * Safe Math.log — returns null for x ≤ 0 or non-finite x.
+ */
+function safeLog(x) {
+  if (!isFinite(x) || x <= 0) return null;
+  const r = Math.log(x);
+  return isFinite(r) ? r : null;
+}
+
+/**
+ * Adaptive curve resolution: fewer points per segment when there are many
+ * processes, so total chart data stays manageable at any cycle size.
+ *   4  processes → 80 steps/segment  (640 total)
+ *   20 processes → 40 steps/segment  (800 total)
+ *   50 processes → 20 steps/segment  (1000 total — Chart.js handles easily)
+ */
+function getSteps(numProcesses) {
+  return Math.max(20, Math.min(80, Math.floor(800 / Math.max(1, numProcesses))));
+}
+
+/**
+ * Smart axis-label formatter.
+ * Avoids "1000000.00" (use exponential) and "0.0000" (use more decimals).
+ */
+function fmtAxisVal(v) {
+  if (!isFinite(v)) return '';
+  const a = Math.abs(v);
+  if (a === 0) return '0';
+  if (a >= 1e5 || (a > 0 && a < 0.01)) return v.toExponential(2);
+  if (a >= 1e3) return v.toFixed(0);
+  if (a >= 10)  return v.toFixed(1);
+  return v.toFixed(3);
+}
+
+/* ════════════════════════════════════════════════════
+   PRESETS
+════════════════════════════════════════════════════ */
+const PRESETS = {
+  brayton: {
+    pts: [{ P: 101, T: 300 }, { P: 808, T: null }, { P: 808, T: 1400 }, { P: 101, T: null }],
+    ps:  ['isentropic', 'isobaric', 'isentropic', 'isobaric'],
+    cp: 1.005, gamma: 1.40, m: 1,
+  },
+  rankine: {
+    pts: [{ P: 10, T: 320 }, { P: 3000, T: null }, { P: 3000, T: 900 }, { P: 10, T: null }],
+    ps:  ['isentropic', 'isobaric', 'isentropic', 'isobaric'],
+    cp: 2.0, gamma: 1.13, m: 1,
+  },
+  otto: {
+    get pts() {
+      const r = 8, g = 1.40, T1 = 300, P1 = 101, T3 = 2400;
+      const T2 = T1 * Math.pow(r, g - 1);
+      const P2 = P1 * Math.pow(r, g);
+      const P3 = P2 * T3 / T2;
+      const T4 = T3 / Math.pow(r, g - 1);
+      const P4 = P1 * T4 / T1;
+      return [{ P: P1, T: T1 }, { P: P2, T: T2 }, { P: P3, T: T3 }, { P: P4, T: T4 }];
+    },
+    ps: ['isentropic', 'isochoric', 'isentropic', 'isochoric'],
+    cp: 1.005, gamma: 1.40, m: 1,
+  },
+  diesel: {
+    get pts() {
+      const r = 18, rc = 2, g = 1.40, T1 = 300, P1 = 101;
+      const T2 = T1 * Math.pow(r, g - 1);
+      const P2 = P1 * Math.pow(r, g);
+      const T3 = T2 * rc;
+      const P3 = P2;
+      const T4 = T3 * Math.pow(rc / r, g - 1);
+      const P4 = P1 * T4 / T1;
+      return [{ P: P1, T: T1 }, { P: P2, T: T2 }, { P: P3, T: T3 }, { P: P4, T: T4 }];
+    },
+    ps: ['isentropic', 'isobaric', 'isentropic', 'isochoric'],
+    cp: 1.005, gamma: 1.40, m: 1,
+  },
+  stirling: {
+    pts: [{ P: 101, T: 300 }, { P: 505, T: 300 }, { P: 1515, T: 900 }, { P: 303, T: 900 }],
+    ps:  ['isothermal', 'isochoric', 'isothermal', 'isochoric'],
+    cp: 1.005, gamma: 1.40, m: 1,
+  },
+};
+
+/* ════════════════════════════════════════════════════
+   APPLICATION STATE
+════════════════════════════════════════════════════ */
+let points       = [];      // array of { P: number|null, T: number|null }
+let procs        = [];      // array of { type: string, n: number|null }
+let activePreset = null;
+let tsChart      = null;
+let pvChart      = null;
+let updateTimer  = null;
+
+/* ════════════════════════════════════════════════════
+   SLIDER ↔ NUMBER SYNC
+════════════════════════════════════════════════════ */
+[
+  { slider: 'g-cp',    num: 'num-cp',    dp: 3, physMin: 0.1  },
+  { slider: 'g-gamma', num: 'num-gamma', dp: 2, physMin: 1.01 },
+  { slider: 'g-m',     num: 'num-m',     dp: 1, physMin: 0.01 },
+].forEach(({ slider, num, dp, physMin }) => {
+  const sl = document.getElementById(slider);
+  const ni = document.getElementById(num);
+
+  sl.addEventListener('input', () => {
+    ni.value = parseFloat(sl.value).toFixed(dp);
+    clearPreset();
+    scheduleUpdate();
+  });
+
+  ni.addEventListener('input', () => {
+    let v = parseFloat(ni.value);
+    if (!isFinite(v)) return;
+    if (v < physMin) { v = physMin; ni.value = v.toFixed(dp); }
+    sl.value = Math.min(parseFloat(sl.max), Math.max(parseFloat(sl.min), v));
+    clearPreset();
+    scheduleUpdate();
+  });
+});
+
+function setParam(sid, nid, val, dp) {
+  document.getElementById(sid).value = val;
+  document.getElementById(nid).value = val.toFixed(dp);
+}
+
+/** Debounce update by 50 ms — coalesces rapid keystrokes into one recalculation. */
+function scheduleUpdate() {
+  clearTimeout(updateTimer);
+  updateTimer = setTimeout(update, 50);
+}
+
+/* ════════════════════════════════════════════════════
+   PRESET LOADING
+════════════════════════════════════════════════════ */
+function loadPreset(name) {
+  const p = PRESETS[name];
+  if (!p) return;
+  points = p.pts.map(pt => ({ P: pt.P != null ? +pt.P : null, T: pt.T != null ? +pt.T : null }));
+  procs  = p.ps.map(tp => ({ type: tp, n: tp === 'polytropic' ? 1.3 : null }));
+  setParam('g-cp',    'num-cp',    p.cp,    3);
+  setParam('g-gamma', 'num-gamma', p.gamma, 2);
+  setParam('g-m',     'num-m',     p.m,     1);
+  activePreset = name;
+  document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+  const btn = document.getElementById('pre-' + name);
+  if (btn) btn.classList.add('active');
+  renderUI();
+}
+
+function clearPreset() {
+  if (!activePreset) return;
+  activePreset = null;
+  document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+}
+
+/* ════════════════════════════════════════════════════
+   UI RENDERING
+════════════════════════════════════════════════════ */
+
+/** Full UI rebuild followed by a single synchronous calculation. */
+function renderUI() {
+  renderPoints();
+  renderProcs();   // NOTE: renderProcs() must NOT call update() — renderUI() does it here
+  update();
+}
+
+function renderPoints() {
+  const n = points.length;
+  document.getElementById('points-list').innerHTML = points.map((pt, i) => `
+    <div class="point-row">
+      <span class="pt-idx">${i + 1}</span>
+      <span class="pt-lbl">P <span class="slider-unit">kPa</span></span>
+      <input type="number" min="${LIMITS.P.min}" step="any"
+        value="${pt.P != null ? pt.P.toFixed(2) : ''}" placeholder="auto" style="width:74px"
+        oninput="onPointInput(${i},'P',this)">
+      <span class="pt-lbl">T <span class="slider-unit">K</span></span>
+      <input type="number" min="${LIMITS.T.min}" step="any"
+        value="${pt.T != null ? pt.T.toFixed(2) : ''}" placeholder="auto" style="width:74px"
+        oninput="onPointInput(${i},'T',this)">
+      ${n > MIN_POINTS
+        ? `<button class="del-btn" onclick="removePoint(${i})" title="Remove state ${i + 1}"><i class="ti ti-x"></i></button>`
+        : '<span style="width:24px"></span>'}
+    </div>`).join('');
+}
+
+/**
+ * FIX (BUG 4): on invalid input, preserve the previous valid value — do not
+ * overwrite with lim.min (which would silently corrupt the state).
+ */
+function onPointInput(i, key, el) {
+  clearPreset();
+  if (el.value.trim() === '') {
+    points[i][key] = null;
+    el.classList.remove('invalid');
+    scheduleUpdate();
+    return;
+  }
+  const raw = parseFloat(el.value);
+  const lim = LIMITS[key];
+  if (!isFinite(raw) || raw < lim.min || raw > lim.max) {
+    el.classList.add('invalid');
+    // Keep points[i][key] at its last valid value — do not dispatch an update
+    return;
+  }
+  el.classList.remove('invalid');
+  points[i][key] = raw;
+  scheduleUpdate();
+}
+
+/**
+ * FIX (BUG 5): renderProcs() no longer calls update().
+ * renderUI() calls update() once after renderProcs() returns.
+ * onProcTypeChange() calls scheduleUpdate() separately when triggered by user.
+ */
+function renderProcs() {
+  document.getElementById('procs-list').innerHTML = procs.map((pr, i) => {
+    const from = i + 1;
+    const to   = ((i + 1) % points.length) + 1;
+    const t    = PROCESS_TYPES.find(x => x.id === pr.type);
+    const col  = PROCESS_COLORS[pr.type] || '#888';
+    return `
+    <div class="proc-row">
+      <span class="proc-from">${from}→${to}</span>
+      <span class="proc-dot" style="background:${col}"></span>
+      <select onchange="onProcTypeChange(${i},this.value)">
+        ${PROCESS_TYPES.map(tp =>
+          `<option value="${tp.id}"${tp.id === pr.type ? ' selected' : ''}>${tp.label}</option>`
+        ).join('')}
+      </select>
+      ${pr.type === 'polytropic'
+        ? `<span class="pt-lbl">n&thinsp;=</span>
+           <input type="number" value="${pr.n != null ? pr.n : 1.3}" step="0.05"
+             style="width:58px" oninput="onNInput(${i},this)">` : ''}
+      ${t ? `<span class="tag ${t.tag}">${
+        t.tag === 'work' ? 'work' : t.tag === 'heat' ? 'heat' : 'heat+work'
+      }</span>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function onProcTypeChange(i, newType) {
+  procs[i].type = newType;
+  if (newType === 'polytropic' && procs[i].n == null) procs[i].n = 1.3;
+  clearPreset();
+  renderProcs();     // re-render to show/hide polytropic n input
+  scheduleUpdate();  // now schedule the calculation
+}
+
+function onNInput(i, el) {
+  const v = parseFloat(el.value);
+  if (isFinite(v)) {
+    procs[i].n = v;
+    clearPreset();
+    scheduleUpdate();
+  }
+}
+
+function addPoint() {
+  points.push({ P: null, T: null });
+  procs.push({ type: 'isobaric', n: null });
+  clearPreset();
+  renderUI();
+}
+
+function removePoint(i) {
+  if (points.length <= MIN_POINTS) return;
+  points.splice(i, 1);
+  procs.splice(i, 1);
+  clearPreset();
+  renderUI();
+}
+
+/* ════════════════════════════════════════════════════
+   GAS PROPERTY HELPERS
+════════════════════════════════════════════════════ */
+
+/**
+ * Derive R [kJ/(kg·K)] and cv [kJ/(kg·K)] from cp and γ.
+ * Returns null if inputs are physically impossible.
+ */
+function gasProps(cp, gamma) {
+  if (!isFinite(cp) || cp <= 0 || !isFinite(gamma) || gamma <= 1) return null;
+  const R  = cp * (gamma - 1) / gamma;
+  const cv = cp - R;   // = cp / gamma
+  return { R, cv };
+}
+
+/* ════════════════════════════════════════════════════
+   PHYSICS ENGINE — STATE SOLVER
+════════════════════════════════════════════════════ */
+
+/**
+ * Iterative forward + backward propagation solver.
+ * For each pair of adjacent states (i, j=(i+1)%n) the appropriate
+ * thermodynamic relation is used to fill in any missing P or T.
+ *
+ * Convergence: runs max(30, 2·n) full forward+backward sweeps.
+ * For any realistic cycle topology this guarantees convergence.
+ *
+ * Returns array of { P, T, v } — unresolvable values remain null.
+ */
+function solveStates(cp, gamma) {
+  const n     = points.length;
+  const props = gasProps(cp, gamma);
+  if (!props) throw new Error('Invalid gas properties (cp or γ out of range)');
+  const { R } = props;
+
+  // Initialise from user input; clamp to physical bounds immediately
+  const s = points.map(p => ({
+    P: p.P != null ? Math.max(LIMITS.P.min, Math.min(LIMITS.P.max, +p.P)) : null,
+    T: p.T != null ? Math.max(LIMITS.T.min, Math.min(LIMITS.T.max, +p.T)) : null,
+    v: null,
+  }));
+
+  /** Apply physical clamping to a state after a propagation step. */
+  function clamp(st) {
+    if (st.T != null) {
+      const t = fin(st.T, LIMITS.T.min);
+      st.T = Math.max(LIMITS.T.min, Math.min(LIMITS.T.max, t));
+    }
+    if (st.P != null) {
+      const p = fin(st.P, LIMITS.P.min);
+      st.P = Math.max(LIMITS.P.min, Math.min(LIMITS.P.max, p));
+    }
+  }
+
+  /**
+   * Forward step: given fully-known source state f, fill in unknown
+   * values of target state t = states[(i+1)%n].
+   */
+  function fwd(i) {
+    const j  = (i + 1) % n;
+    const f  = s[i], t = s[j];
+    if (f.P == null || f.T == null) return;
+
+    const tp = procs[i].type;
+    const pn = (procs[i].n != null && isFinite(procs[i].n)) ? procs[i].n : 1.3;
+
+    switch (tp) {
+      case 'isentropic': {
+        const e = (gamma - 1) / gamma;
+        // FIX (REVIEW 1): safePow() returning null must NOT be multiplied directly —
+        // `f.T * null` coerces to 0 in JS (null → 0 under ToNumber), which silently
+        // "solves" the state to a bogus value instead of leaving it unresolved.
+        if (t.P != null && t.T == null) {
+          const factor = safePow(t.P / f.P, e);
+          t.T = factor != null ? fin(f.T * factor) : null;
+        }
+        if (t.T != null && t.P == null) {
+          const factor = safePow(t.T / f.T, gamma / (gamma - 1));
+          t.P = factor != null ? fin(f.P * factor) : null;
+        }
+        break;
+      }
+      case 'isobaric':
+        if (t.P == null) t.P = f.P;
+        break;
+      case 'isochoric':
+        if (t.T != null && t.P == null) t.P = fin(f.P * t.T / f.T);
+        if (t.P != null && t.T == null) t.T = fin(f.T * t.P / f.P);
+        break;
+      case 'isothermal':
+        if (t.T == null) t.T = f.T;
+        break;
+      case 'polytropic': {
+        if (Math.abs(pn - 1) < 1e-9) {
+          // n ≈ 1 → degenerate isothermal
+          if (t.T == null) t.T = f.T;
+        } else {
+          const e = (pn - 1) / pn;
+          // FIX (REVIEW 1): same null-coercion guard as the isentropic branch above
+          if (t.P != null && t.T == null) {
+            const factor = safePow(t.P / f.P, e);
+            t.T = factor != null ? fin(f.T * factor) : null;
+          }
+          if (t.T != null && t.P == null) {
+            const factor = safePow(t.T / f.T, pn / (pn - 1));
+            t.P = factor != null ? fin(f.P * factor) : null;
+          }
+        }
+        break;
+      }
+    }
+    clamp(t);
+  }
+
+  /**
+   * Backward step: given fully-known target state t, fill in unknown
+   * values of source state f = states[i].
+   *
+   * FIX (BUG 13): original isentropic backward branch incorrectly wrote
+   * to t.T instead of f.T, so backward isentropic recovery never worked.
+   */
+  function bwd(i) {
+    const j  = (i + 1) % n;
+    const f  = s[i], t = s[j];
+    if (t.P == null || t.T == null) return;
+
+    const tp = procs[i].type;
+    const pn = (procs[i].n != null && isFinite(procs[i].n)) ? procs[i].n : 1.3;
+
+    switch (tp) {
+      case 'isentropic': {
+        const e = (gamma - 1) / gamma;
+        // FIX: was incorrectly writing t.T — must write f.T
+        if (f.P != null && f.T == null) {
+          const ratio = fin(t.P / f.P);
+          if (ratio != null) f.T = fin(t.T / safePow(ratio, e));
+        }
+        if (f.T != null && f.P == null) {
+          f.P = fin(t.P / safePow(t.T / f.T, gamma / (gamma - 1)));
+        }
+        break;
+      }
+      case 'isobaric':
+        if (f.P == null) f.P = t.P;
+        // T cannot be back-solved from isobaric endpoint alone (no v constraint)
+        break;
+      case 'isochoric':
+        if (f.T != null && f.P == null) f.P = fin(t.P * f.T / t.T);
+        if (f.P != null && f.T == null) f.T = fin(f.P * t.T / t.P);
+        break;
+      case 'isothermal':
+        if (f.T == null) f.T = t.T;
+        break;
+      case 'polytropic': {
+        if (Math.abs(pn - 1) < 1e-9) {
+          if (f.T == null) f.T = t.T;
+        } else {
+          const e = (pn - 1) / pn;
+          if (f.P != null && f.T == null) {
+            const ratio = fin(t.P / f.P);
+            if (ratio != null) f.T = fin(t.T / safePow(ratio, e));
+          }
+          if (f.T != null && f.P == null) {
+            f.P = fin(t.P / safePow(t.T / f.T, pn / (pn - 1)));
+          }
+        }
+        break;
+      }
+    }
+    clamp(f);
+  }
+
+  // FIX (BUG 10): use max(30, 2·n) passes to guarantee convergence for long cycles
+  const PASSES = Math.max(30, n * 2);
+  for (let it = 0; it < PASSES; it++) {
+    for (let i = 0;         i < n; i++) fwd(i);
+    for (let i = n - 1; i >= 0;    i--) bwd(i);
+  }
+
+  // Specific volume via ideal-gas law: v = R·T / P  [m³/kg]
+  for (let i = 0; i < n; i++) {
+    const st = s[i];
+    if (st.P != null && st.T != null && st.P > 0) {
+      st.v = fin(R * st.T / st.P);
+    }
+  }
+
+  return s;
+}
+
+/* ════════════════════════════════════════════════════
+   PHYSICS ENGINE — HEAT & WORK
+════════════════════════════════════════════════════ */
+
+/**
+ * Compute heat and work for every process in the cycle.
+ *
+ * Sign convention (positive = flows in the direction of the label):
+ *   q > 0  → heat INTO the working fluid       → Qin
+ *   q < 0  → heat OUT of the working fluid      → Qout
+ *   w > 0  → work done BY the fluid (turbine)   → Wt
+ *   w < 0  → work done ON the fluid (compressor)→ Wc
+ *
+ * Thermodynamic model:
+ *   Isentropic / Isobaric  → SSSF open-system (steady-state steady-flow)
+ *   Isochoric              → Closed-system piston-cylinder
+ *   Isothermal / Polytropic→ Consistent with SSSF first law
+ *
+ * NET WORK: Wnet = Qin − Qout  (first law of thermodynamics — always exact).
+ *
+ * FIX (BUG 1): Polytropic heat now uses γ in denominator:
+ *   q = cp·(n−γ)/(γ·(n−1)) · m·ΔT
+ *
+ * FIX (BUG 3): Isothermal work is now properly tallied in Wt/Wc.
+ *   w = q = −R·T·ln(P₂/P₁)  (first law: ΔU = 0 for isothermal ideal gas)
+ */
+function computeHeatWork(states, cp, gamma, m) {
+  const n     = states.length;
+  const props = gasProps(cp, gamma);
+  if (!props) return { Qin: 0, Qout: 0, Wnet: 0, Wt: 0, Wc: 0, eta: 0, bwr: 0 };
+  const { R, cv } = props;
+
+  let Qin = 0, Qout = 0, Wt = 0, Wc = 0;
+
+  for (let i = 0; i < n; i++) {
+    const j  = (i + 1) % n;
+    const si = states[i], sj = states[j];
+    if (si.T == null || sj.T == null) continue;
+    if (!isFinite(si.T) || !isFinite(sj.T)) continue;
+
+    const tp = procs[i].type;
+    const pn = (procs[i].n != null && isFinite(procs[i].n)) ? procs[i].n : 1.3;
+    const dT = sj.T - si.T;
+    let q = 0, w = 0;
+
+    switch (tp) {
+      case 'isentropic':
+        // SSSF: shaft work = −cp·ΔT; q = 0 (adiabatic)
+        w = fin(-m * cp * dT, 0);
+        q = 0;
+        break;
+
+      case 'isobaric':
+        // SSSF: heat = enthalpy rise = cp·ΔT; w = 0 (heat exchanger, no shaft)
+        q = fin(m * cp * dT, 0);
+        w = 0;
+        break;
+
+      case 'isochoric':
+        // Closed system: heat = cv·ΔT; w = 0 (no boundary work at const volume)
+        q = fin(m * cv * dT, 0);
+        w = 0;
+        break;
+
+      case 'isothermal': {
+        // Ideal-gas isothermal: ΔU = 0 → q = w = −R·T·ln(P₂/P₁)
+        // FIX (BUG 3): w is tallied in Wt/Wc (was previously zeroed out)
+        if (si.P != null && sj.P != null && si.P > 0 && sj.P > 0) {
+          const lr = safeLog(sj.P / si.P);
+          if (lr != null) {
+            const val = fin(-m * R * si.T * lr, 0);
+            w = val;   // positive for expansion (P falls), negative for compression
+            q = val;   // equal to work (first law with ΔU = 0)
+          }
+        }
+        break;
+      }
+
+      case 'polytropic': {
+        if (Math.abs(pn - 1) < 1e-9) {
+          // n ≈ 1 → treat as isothermal (avoids 1/(n−1) = ±Infinity)
+          if (si.P != null && sj.P != null && si.P > 0 && sj.P > 0) {
+            const lr = safeLog(sj.P / si.P);
+            if (lr != null) {
+              const val = fin(-m * R * si.T * lr, 0);
+              w = val;
+              q = val;
+            }
+          }
+        } else {
+          // SSSF shaft work: w = −n·R·ΔT / (n−1)
+          // FIX (BUG 1): heat = cp·(n−γ) / (γ·(n−1)) · ΔT  [γ was missing]
+          w = fin(-m * pn * R * dT / (pn - 1), 0);
+          q = fin(m * cp * (pn - gamma) / (gamma * (pn - 1)) * dT, 0);
+        }
+        break;
+      }
+    }
+
+    // Final NaN/Infinity guard (belt-and-suspenders)
+    if (!isFinite(q)) q = 0;
+    if (!isFinite(w)) w = 0;
+
+    if (q > 0)  Qin  += q; else Qout += Math.abs(q);
+    if (w > 0)  Wt   += w; else Wc   += Math.abs(w);
+  }
+
+  // Wnet via first law — always thermodynamically consistent
+  const Wnet = Qin - Qout;
+  const eta  = Qin  > 1e-12 ? Wnet / Qin : 0;
+  const bwr  = Wt   > 1e-12 ? Wc   / Wt  : 0;
+
+  return {
+    Qin:  isFinite(Qin)  ? Qin  : 0,
+    Qout: isFinite(Qout) ? Qout : 0,
+    Wnet: isFinite(Wnet) ? Wnet : 0,
+    Wt:   isFinite(Wt)   ? Wt   : 0,
+    Wc:   isFinite(Wc)   ? Wc   : 0,
+    eta:  isFinite(eta)  ? eta  : 0,
+    bwr:  isFinite(bwr)  ? bwr  : 0,
+  };
+}
+
+/* ════════════════════════════════════════════════════
+   PHYSICS ENGINE — ENTROPY OFFSETS (T-s diagram)
+════════════════════════════════════════════════════ */
+
+/**
+ * Forward-propagate specific-entropy offsets s [kJ/(kg·K)] starting from
+ * sOff[0] = 0. After computation, shift the entire array so the minimum = 0
+ * (keeps the T-s x-axis non-negative for any cycle direction).
+ *
+ * Process Δs formulae (per unit mass, ideal gas):
+ *   Isentropic:  Δs = 0
+ *   Isobaric:    Δs = cp · ln(T₂/T₁)
+ *   Isochoric:   Δs = cv · ln(T₂/T₁)
+ *   Isothermal:  Δs = −R  · ln(P₂/P₁)
+ *   Polytropic:  Δs = cp  · (n−γ) / (γ·(n−1)) · ln(T₂/T₁)   ← FIX (BUG 2)
+ *
+ * The closing segment in buildTsDatasets draws from sOff[n−1] back to
+ * sOff[0] = 0; for a thermodynamically consistent cycle (Δs_total = 0)
+ * these coincide naturally after normalization.
+ */
+function computeEntropyOffsets(states, cp, gamma) {
+  const n     = states.length;
+  const props = gasProps(cp, gamma);
+  if (!props) return new Array(n).fill(0);
+  const { R, cv } = props;
+
+  const sOff = new Array(n).fill(null);
+  sOff[0] = 0;
+
+  for (let i = 0; i < n - 1; i++) {
+    const j  = i + 1;
+    if (sOff[i] === null) continue;
+
+    const si = states[i], sj = states[j];
+    const tp = procs[i].type;
+    const pn = (procs[i].n != null && isFinite(procs[i].n)) ? procs[i].n : 1.3;
+
+    // If either endpoint temperature is unknown, carry offset unchanged
+    if (si.T == null || sj.T == null || !isFinite(si.T) || !isFinite(sj.T)) {
+      sOff[j] = sOff[i];
+      continue;
+    }
+
+    let ds = 0;
+
+    switch (tp) {
+      case 'isentropic':
+        ds = 0;
+        break;
+
+      case 'isobaric': {
+        const lr = safeLog(sj.T / si.T);
+        ds = lr != null ? cp * lr : 0;
+        break;
+      }
+
+      case 'isochoric': {
+        const lr = safeLog(sj.T / si.T);
+        ds = lr != null ? cv * lr : 0;
+        break;
+      }
+
+      case 'isothermal': {
+        if (si.P != null && sj.P != null && si.P > 0 && sj.P > 0) {
+          const lr = safeLog(sj.P / si.P);
+          ds = lr != null ? -R * lr : 0;
+        }
+        break;
+      }
+
+      case 'polytropic': {
+        if (Math.abs(pn - 1) < 1e-9) {
+          // n ≈ 1 → isothermal Δs
+          if (si.P != null && sj.P != null && si.P > 0 && sj.P > 0) {
+            const lr = safeLog(sj.P / si.P);
+            ds = lr != null ? -R * lr : 0;
+          }
+        } else {
+          // FIX (BUG 2): Δs = cp·(n−γ)/(γ·(n−1))·ln(T₂/T₁)  [γ was missing]
+          const lr = safeLog(sj.T / si.T);
+          ds = lr != null ? cp * (pn - gamma) / (gamma * (pn - 1)) * lr : 0;
+        }
+        break;
+      }
+    }
+
+    sOff[j] = isFinite(ds) ? sOff[i] + ds : sOff[i];
+  }
+
+  // Shift minimum to 0 so the T-s x-axis starts non-negative
+  const valid = sOff.filter(v => v !== null && isFinite(v));
+  if (valid.length > 0) {
+    const mn = Math.min(...valid);
+    for (let i = 0; i < n; i++) {
+      if (sOff[i] !== null) sOff[i] -= mn;
+    }
+  }
+
+  return sOff;
+}
+
+/* ════════════════════════════════════════════════════
+   CHART DATASET BUILDERS
+════════════════════════════════════════════════════ */
+
+/**
+ * Build Chart.js scatter datasets for the T-s diagram.
+ *
+ * Each process is drawn as the thermodynamically correct curve shape:
+ *   Isentropic  → vertical line  (Δs = 0, T changes)
+ *   Isothermal  → horizontal line (T = const, s changes)
+ *   Others      → T(f) = T₀·(T₁/T₀)^f  (geometric / log-linear interpolation)
+ *                 Correct because ds ∝ d(ln T) for isobaric, isochoric, polytropic.
+ *
+ * FIX (BUG 7 / BUG 8): adaptive STEPS; all NaN/Infinity points filtered out.
+ */
+function buildTsDatasets(states, sOff) {
+  const n     = states.length;
+  const STEPS = getSteps(n);
+  const datasets = [];
+
+  for (let i = 0; i < n; i++) {
+    const j   = (i + 1) % n;
+    const si  = states[i], sj = states[j];
+    const s0  = sOff[i], s1 = sOff[j];
+    const tp  = procs[i].type;
+    const col = PROCESS_COLORS[tp] || '#888';
+
+    if (si.T == null || sj.T == null) continue;
+    if (s0 == null || s1 == null) continue;
+    if (!isFinite(s0) || !isFinite(s1) || !isFinite(si.T) || !isFinite(sj.T)) continue;
+
+    const pts = [];
+
+    if (tp === 'isentropic') {
+      // Vertical line — Δs = 0, T changes between si.T and sj.T
+      pts.push({ x: s0, y: si.T });
+      pts.push({ x: s0, y: sj.T });
+
+    } else if (tp === 'isothermal') {
+      // Horizontal line — T is constant, s changes
+      pts.push({ x: s0, y: si.T });
+      pts.push({ x: s1, y: si.T });   // both endpoints at same T
+
+    } else {
+      // Curved processes: geometric T interpolation in T-s space
+      //   s(f) = s₀ + f·Δs  (linear)
+      //   T(f) = T₀·(T₁/T₀)^f  (exponential — correct for cp·ds = cp·d(lnT) processes)
+      const T0    = si.T, T1 = sj.T;
+      const ds    = s1 - s0;
+      const ratio = (T0 > 0 && T1 > 0) ? T1 / T0 : 1;
+
+      for (let k = 0; k <= STEPS; k++) {
+        const f = k / STEPS;
+        const s = s0 + ds * f;
+        const T = (isFinite(ratio) && ratio > 0)
+          ? T0 * Math.pow(ratio, f)
+          : T0 + (T1 - T0) * f;   // fallback: linear interpolation
+        if (isFinite(s) && isFinite(T) && T > 0) pts.push({ x: s, y: T });
+      }
+    }
+
+    if (pts.length >= 2) {
+      datasets.push({
+        data: pts, showLine: true, borderColor: col, borderWidth: 2.5,
+        pointRadius: 0, tension: 0, fill: false,
+      });
+    }
+  }
+
+  // State-point dots, coloured by the outgoing process
+  const dotPts = [], dotColors = [];
+  for (let i = 0; i < n; i++) {
+    const so = sOff[i], T = states[i].T;
+    if (so == null || T == null || !isFinite(so) || !isFinite(T) || T <= 0) continue;
+    dotPts.push({ x: so, y: T });
+    dotColors.push(PROCESS_COLORS[procs[i].type] || '#888');
+  }
+  if (dotPts.length > 0) {
+    datasets.push({
+      data: dotPts, showLine: false, pointRadius: 6,
+      pointBackgroundColor: dotColors, pointBorderColor: '#fff', pointBorderWidth: 2,
+    });
+  }
+
+  return datasets;
+}
+
+/**
+ * Build Chart.js scatter datasets for the P-v diagram.
+ *
+ * Each process is drawn as the correct thermodynamic curve:
+ *   Isentropic / Polytropic → P·vⁿ = const  (hyperbolic curve)
+ *   Isobaric                → P = const       (horizontal line)
+ *   Isochoric               → v = const       (vertical line)
+ *   Isothermal              → P·v = const      (rectangular hyperbola)
+ *
+ * FIX (BUG 7 / BUG 8 / BUG 12): adaptive STEPS; fin() wrapper prevents
+ * Infinity leaking into chart data; negative/zero points discarded.
+ */
+function buildPvDatasets(states, gamma) {
+  const n     = states.length;
+  const STEPS = getSteps(n);
+  const datasets = [];
+
+  for (let i = 0; i < n; i++) {
+    const j   = (i + 1) % n;
+    const si  = states[i], sj = states[j];
+    const tp  = procs[i].type;
+    const pn  = (procs[i].n != null && isFinite(procs[i].n)) ? procs[i].n : 1.3;
+    const col = PROCESS_COLORS[tp] || '#888';
+
+    if (si.v == null || sj.v == null || si.P == null || sj.P == null) continue;
+    if (!isFinite(si.v) || !isFinite(sj.v) || !isFinite(si.P) || !isFinite(sj.P)) continue;
+    if (si.v <= 0 || sj.v <= 0 || si.P <= 0 || sj.P <= 0) continue;
+
+    const raw = [{ x: si.v, y: si.P }];
+
+    switch (tp) {
+      case 'isentropic':
+      case 'polytropic': {
+        const k = (tp === 'isentropic') ? gamma : pn;
+        // Guard: safePow handles extreme k values without producing NaN/Infinity.
+        // FIX (REVIEW 1): must check the factor before multiplying — `si.P * null`
+        // would otherwise coerce to 0 and slip past the `Cval == null` bailout below.
+        const kFactor = safePow(si.v, k);
+        const Cval = kFactor != null ? fin(si.P * kFactor) : null;
+        if (Cval == null) break;
+        for (let s = 1; s <= STEPS; s++) {
+          const v = si.v + (sj.v - si.v) * s / STEPS;
+          if (v > 0) {
+            const P = fin(Cval / safePow(v, k));
+            if (P != null && P > 0) raw.push({ x: v, y: P });
+          }
+        }
+        break;
+      }
+      case 'isobaric':
+        for (let s = 1; s <= STEPS; s++)
+          raw.push({ x: si.v + (sj.v - si.v) * s / STEPS, y: si.P });
+        break;
+
+      case 'isochoric':
+        for (let s = 1; s <= STEPS; s++)
+          raw.push({ x: si.v, y: si.P + (sj.P - si.P) * s / STEPS });
+        break;
+
+      case 'isothermal': {
+        const C = si.P * si.v;
+        for (let s = 1; s <= STEPS; s++) {
+          const v = si.v + (sj.v - si.v) * s / STEPS;
+          if (v > 0) {
+            const P = fin(C / v);
+            if (P != null && P > 0) raw.push({ x: v, y: P });
+          }
+        }
+        break;
+      }
+    }
+
+    raw.push({ x: sj.v, y: sj.P });
+
+    // FIX (BUG 7 / BUG 12): discard any non-finite or non-positive points
+    const pts = raw.filter(p =>
+      isFinite(p.x) && isFinite(p.y) && p.x > 0 && p.y > 0
+    );
+
+    if (pts.length >= 2) {
+      datasets.push({
+        data: pts, showLine: true, borderColor: col, borderWidth: 2.5,
+        pointRadius: 0, tension: 0, fill: false,
+      });
+    }
+  }
+
+  // State-point dots
+  const dotPts = [], dotColors = [];
+  for (let i = 0; i < n; i++) {
+    const v = states[i].v, P = states[i].P;
+    if (v == null || P == null || !isFinite(v) || !isFinite(P) || v <= 0 || P <= 0) continue;
+    dotPts.push({ x: v, y: P });
+    dotColors.push(PROCESS_COLORS[procs[i].type] || '#888');
+  }
+  if (dotPts.length > 0) {
+    datasets.push({
+      data: dotPts, showLine: false, pointRadius: 6,
+      pointBackgroundColor: dotColors, pointBorderColor: '#fff', pointBorderWidth: 2,
+    });
+  }
+
+  return datasets;
+}
+
+/* ════════════════════════════════════════════════════
+   CHART RENDERING
+════════════════════════════════════════════════════ */
+
+function makeChartOpts(xLabel, yLabel) {
+  const dark = matchMedia('(prefers-color-scheme:dark)').matches;
+  const tx   = dark ? '#9a9992' : '#6b6a65';
+  const gr   = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
+  return {
+    responsive: true, maintainAspectRatio: false,
+    animation: { duration: 0 },    // no animation for real-time updates
+    plugins: { legend: { display: false } },
+    scales: {
+      x: {
+        type:  'linear',
+        title: { display: true, text: xLabel, color: tx, font: { size: 11 } },
+        ticks: { color: tx, font: { size: 10 }, maxTicksLimit: 7, callback: fmtAxisVal },
+        grid:  { color: gr },
+      },
+      y: {
+        type:  'linear',
+        title: { display: true, text: yLabel, color: tx, font: { size: 11 } },
+        ticks: { color: tx, font: { size: 10 }, maxTicksLimit: 7, callback: fmtAxisVal },
+        grid:  { color: gr },
+      },
+    },
+  };
+}
+
+/**
+ * FIX (BUG 6): update chart DATA instead of destroying and recreating the
+ * Chart.js instance on every change. Chart instances are created lazily once;
+ * all subsequent calls swap the datasets and call chart.update('none').
+ *
+ * Falls back to full recreation if chart.update() throws (rare edge case).
+ */
+function refreshCharts(tsData, pvData) {
+  // ── T-s chart ──
+  try {
+    if (!tsChart) {
+      tsChart = new Chart(document.getElementById('ts-canvas'), {
+        type: 'scatter',
+        data: { datasets: tsData },
+        options: makeChartOpts('Entropy s (kJ/kg·K)', 'Temperature T (K)'),
+      });
+    } else {
+      tsChart.data.datasets = tsData;
+      tsChart.update('none');
+    }
+  } catch (e) {
+    console.warn('T-s chart error — recreating:', e.message);
+    try { if (tsChart) tsChart.destroy(); } catch (_) {}
+    tsChart = null;
+    try {
+      tsChart = new Chart(document.getElementById('ts-canvas'), {
+        type: 'scatter',
+        data: { datasets: tsData },
+        options: makeChartOpts('Entropy s (kJ/kg·K)', 'Temperature T (K)'),
+      });
+    } catch (e2) { console.error('T-s chart unrecoverable:', e2); }
+  }
+
+  // ── P-v chart ──
+  try {
+    if (!pvChart) {
+      pvChart = new Chart(document.getElementById('pv-canvas'), {
+        type: 'scatter',
+        data: { datasets: pvData },
+        options: makeChartOpts('Specific volume v (m³/kg)', 'Pressure P (kPa)'),
+      });
+    } else {
+      pvChart.data.datasets = pvData;
+      pvChart.update('none');
+    }
+  } catch (e) {
+    console.warn('P-v chart error — recreating:', e.message);
+    try { if (pvChart) pvChart.destroy(); } catch (_) {}
+    pvChart = null;
+    try {
+      pvChart = new Chart(document.getElementById('pv-canvas'), {
+        type: 'scatter',
+        data: { datasets: pvData },
+        options: makeChartOpts('Specific volume v (m³/kg)', 'Pressure P (kPa)'),
+      });
+    } catch (e2) { console.error('P-v chart unrecoverable:', e2); }
+  }
+}
+
+function renderLegend(elementId) {
+  const seen = new Set();
+  document.getElementById(elementId).innerHTML = procs
+    .filter(pr => { if (seen.has(pr.type)) return false; seen.add(pr.type); return true; })
+    .map(pr => {
+      const info = PROCESS_TYPES.find(p => p.id === pr.type);
+      const col  = PROCESS_COLORS[pr.type] || '#888';
+      return `<div class="legend-item">
+        <div class="legend-swatch" style="background:${col}"></div>
+        ${info ? info.label : pr.type}</div>`;
+    }).join('');
+}
+
+/* ════════════════════════════════════════════════════
+   MAIN UPDATE — called after every state change
+════════════════════════════════════════════════════ */
+function update() {
+  const cp    = parseFloat(document.getElementById('num-cp').value);
+  const gamma = parseFloat(document.getElementById('num-gamma').value);
+  const m     = parseFloat(document.getElementById('num-m').value);
+  const errEl = document.getElementById('error');
+
+  // ── Validate global parameters ──
+  const errors = [];
+  if (!isFinite(cp)    || cp    < 0.1)  errors.push('cₚ must be ≥ 0.1 kJ/(kg·K)');
+  if (!isFinite(gamma) || gamma < 1.01) errors.push('γ must be > 1');
+  if (!isFinite(m)     || m     < 0.01) errors.push('ṁ must be > 0 kg/s');
+
+  // ── Validate state-point inputs ──
+  points.forEach((pt, i) => {
+    if (pt.T !== null && (!isFinite(pt.T) || pt.T < LIMITS.T.min))
+      errors.push(`State ${i + 1}: T must be ≥ ${LIMITS.T.min} K`);
+    if (pt.P !== null && (!isFinite(pt.P) || pt.P < LIMITS.P.min))
+      errors.push(`State ${i + 1}: P must be > 0 kPa`);
+  });
+
+  // ── Validate polytropic indices ──
+  procs.forEach((pr, i) => {
+    if (pr.type === 'polytropic') {
+      if (pr.n == null || !isFinite(pr.n))
+        errors.push(`Process ${i + 1}→${((i + 1) % points.length) + 1}: polytropic index n must be a finite number`);
+    }
+  });
+
+  if (errors.length) {
+    errEl.style.display = 'block';
+    errEl.innerHTML = errors.map(e => `⚠ ${e}`).join('<br>');
+    return;
+  }
+
+  // ── Solve state points ──
+  let states;
+  try {
+    states = solveStates(cp, gamma);
+  } catch (e) {
+    errEl.style.display = 'block';
+    errEl.textContent = '⚠ ' + e.message;
+    return;
+  }
+
+  // ── Report undetermined states ──
+  const unsolved = states.filter(s => s.P == null || s.T == null);
+
+  // FIX (REVIEW 3): the hint text under the process list promises that isothermal
+  // legs need P specified at both ends; nothing previously enforced or flagged
+  // this, so a missing P silently zeroed that leg's q/w with no visible warning.
+  // This mirrors the existing non-blocking "undetermined" pattern below — it
+  // informs without halting the calculation, and adds no new UI elements.
+  const warnings = [];
+  if (unsolved.length > 0) {
+    warnings.push(`${unsolved.length} state point(s) undetermined — specify more P or T values.`);
+  }
+  procs.forEach((pr, i) => {
+    if (pr.type === 'isothermal') {
+      const j = (i + 1) % points.length;
+      if (states[i].P == null || states[j].P == null) {
+        warnings.push(`Process ${i + 1}→${j + 1} (isothermal) needs P at both ends — its heat/work will read as 0 until then.`);
+      }
+    }
+  });
+
+  if (warnings.length > 0) {
+    errEl.style.display = 'block';
+    errEl.innerHTML = warnings.map(w => `⚠ ${w}`).join('<br>');
+  } else {
+    errEl.style.display = 'none';
+  }
+
+  // ── Thermodynamic metrics ──
+  const { Qin, Qout, Wnet, Wt, Wc, eta, bwr } = computeHeatWork(states, cp, gamma, m);
+
+  const fmt = (v, dp = 1, u = '') => isFinite(v) ? v.toFixed(dp) + (u ? ' ' + u : '') : '—';
+
+  const wnetEl = document.getElementById('r-Wnet');
+  wnetEl.textContent = fmt(Wnet, 1, 'kJ');
+  wnetEl.className   = 'mval ' + (Wnet >= 0 ? 'blue' : 'red');
+
+  const etaEl = document.getElementById('r-eta');
+  etaEl.textContent = isFinite(eta) ? (eta * 100).toFixed(2) + '%' : '—';
+  etaEl.className   = 'mval ' + (eta >= 0 ? 'teal' : 'red');
+
+  document.getElementById('r-Qin') .textContent = fmt(Qin,  1, 'kJ');
+  document.getElementById('r-Qout').textContent = fmt(Qout, 1, 'kJ');
+  document.getElementById('r-Wt')  .textContent = fmt(Wt,   1, 'kJ');
+  document.getElementById('r-Wc')  .textContent = fmt(Wc,   1, 'kJ');
+  document.getElementById('r-bwr') .textContent = isFinite(bwr) ? (bwr * 100).toFixed(1) + '%' : '—';
+  document.getElementById('r-pts') .textContent = points.length;
+
+  // ── State-point summary cards ──
+  document.getElementById('states-output').innerHTML = states.map((s, i) => `
+    <div class="st-card">
+      <div class="st-name">
+        <span class="st-dot" style="background:${PROCESS_COLORS[procs[i].type] || '#888'}"></span>
+        State ${i + 1}
+      </div>
+      <div class="st-row"><span>P =</span> ${s.P != null ? s.P.toFixed(2) + ' kPa' : '—'}</div>
+      <div class="st-row"><span>T =</span> ${s.T != null ? s.T.toFixed(2) + ' K'   : '—'}</div>
+      <div class="st-row"><span>v =</span> ${s.v != null ? s.v.toFixed(5) + ' m³/kg' : '—'}</div>
+    </div>`).join('');
+
+  // ── Charts ──
+  const sOff = computeEntropyOffsets(states, cp, gamma);
+  refreshCharts(buildTsDatasets(states, sOff), buildPvDatasets(states, gamma));
+  renderLegend('ts-legend');
+  renderLegend('pv-legend');
+}
+
+/* ── Bootstrap ── */
+loadPreset('brayton');
+</script>
+</body>
+</html>
