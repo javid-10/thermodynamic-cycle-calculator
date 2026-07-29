@@ -19,7 +19,8 @@ Most online cycle calculators lock users into rigid presets and obscure the unde
 
 ## Preview
 
-![Thermodynamic Cycle Calculator Dashboard](YOUR_IMAGE_OR_GIF_URL_HERE.png)
+![Thermodynamic Cycle Calculator Dashboard](https://github.com/user-attachments/assets/489f76c0-b730-4082-9dfa-a3b1cb5dacf0)
+
 *Figure 1: Real-time analysis of an ideal Otto Cycle with dynamic T-s and P-v plotting.*
 
 ---
