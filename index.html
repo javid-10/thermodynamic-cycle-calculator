@@ -102,6 +102,51 @@
     .st-dot  { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
     .st-row      { font-size:12px; color:var(--tx); line-height:1.9; }
     .st-row span { color:var(--tx2); }
+    [hidden] { display:none !important; }
+    .mode-row { display:flex; gap:6px; margin-bottom:1rem; align-items:center; }
+    .mode-row .preset-btn { font-size:13px; padding:6px 14px; }
+    .mode-row #mode-calculator.active { background:#185FA5; border-color:#185FA5; color:#fff; }
+    .mode-row #mode-analysis.active { background:#752C3D; border-color:#752C3D; color:#fff; }
+    .mode-row .preset-btn.active:hover { filter:brightness(1.12); }
+    @media (prefers-color-scheme:dark) {
+      .mode-row #mode-calculator.active { background:#0C447C; border-color:#85B7EB; }
+      .mode-row #mode-analysis.active { background:#752C3D; border-color:#C78090; }
+    }
+    .analysis-field-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+    .analysis-field { display:flex; flex-direction:column; gap:4px; min-width:0; }
+    .analysis-field label { color:var(--tx2); font-size:12px; }
+    .analysis-field input { width:100%; height:36px; }
+    .analysis-unit { font-size:11px; color:var(--tx2); }
+    .analysis-heading { font-size:15px; font-weight:500; margin-bottom:4px; }
+    .analysis-copy { color:var(--tx2); font-size:12px; margin-bottom:12px; }
+    .analysis-static { padding:7px 9px; background:var(--bg2); border:0.5px solid var(--bd); border-radius:var(--r); font-size:13px; }
+    .analysis-button { background:var(--blue-bg); color:var(--blue); border:1px solid var(--blue);
+      border-radius:var(--r); padding:8px 15px; font:inherit; font-size:13px; font-weight:600;
+      cursor:pointer; margin-top:14px; min-height:38px; }
+    .analysis-button:hover { filter:brightness(1.1); }
+    .analysis-button:focus-visible, .preset-btn:focus-visible { outline:2px solid var(--blue); outline-offset:2px; }
+    .analysis-result-chart { position:relative; height:270px; }
+    .analysis-charts { display:grid; gap:12px; }
+    .analysis-metrics { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+    .analysis-metrics .metric { background:var(--bg2); }
+    .analysis-metrics .mval { font-size:18px; }
+    .analysis-note { color:var(--tx2); font-size:12px; line-height:1.6; }
+    .analysis-empty { color:var(--tx2); font-size:13px; }
+    #analysis-view { grid-template-columns:minmax(0,300px) minmax(0,1fr); }
+    #analysis-view > *, #analysis-view .card, #analysis-view .analysis-charts,
+    #analysis-view .analysis-result-chart { min-width:0; }
+    #analysis-view .analysis-charts { grid-template-columns:minmax(0,1fr); }
+    #analysis-view .analysis-result-chart { width:100%; }
+    #analysis-view canvas { max-width:100%; }
+    #analysis-view input[type=number] { appearance:textfield; -moz-appearance:textfield; }
+    #analysis-view input[type=number]::-webkit-inner-spin-button,
+    #analysis-view input[type=number]::-webkit-outer-spin-button { -webkit-appearance:none; margin:0; }
+    @media (max-width:760px) { #analysis-view { grid-template-columns:minmax(0,1fr); } }
+    @media (max-width:760px) { .analysis-result-chart { height:245px; } }
+    @media (max-width:420px) {
+      .analysis-field-grid { grid-template-columns:1fr; }
+      .analysis-metrics { grid-template-columns:1fr; }
+    }
   </style>
 </head>
 <body>
@@ -118,7 +163,11 @@
     <button class="preset-btn" id="pre-diesel"   onclick="loadPreset('diesel')">Diesel</button>
     <button class="preset-btn" id="pre-stirling" onclick="loadPreset('stirling')">Stirling</button>
   </div>
-  <div class="layout">
+  <div class="mode-row" id="mode-row" aria-label="Brayton view">
+    <button type="button" class="preset-btn active" id="mode-calculator" aria-pressed="true" onclick="setMode('calculator')">Calculator</button>
+    <button type="button" class="preset-btn" id="mode-analysis" aria-pressed="false" onclick="setMode('analysis')">Analysis</button>
+  </div>
+  <div class="layout" id="calculator-view">
     <div class="left-col">
       <div class="card">
         <div class="section-label">Global parameters</div>
@@ -189,6 +238,62 @@
       </div>
     </div>
   </div>
+  <section class="layout" id="analysis-view" aria-label="Brayton pressure ratio analysis" hidden>
+    <div class="left-col">
+      <div class="card">
+        <div class="section-label">Analysis</div>
+        <h2 class="analysis-heading">Pressure ratio sweep</h2>
+        <p class="analysis-copy">Ideal Brayton cycle · constant specific heats · isentropic compressor and turbine.</p>
+        <div class="analysis-field">
+          <label for="sweep-variable">Variable to analyze</label>
+          <div class="analysis-static" id="sweep-variable">Pressure ratio, rₚ</div>
+        </div>
+        <hr class="sep">
+        <div class="section-label">Pressure ratio range</div>
+        <div class="analysis-field-grid">
+          <div class="analysis-field"><label for="sweep-min">Minimum</label><input id="sweep-min" type="number" inputmode="decimal" step="any" value="2"></div>
+          <div class="analysis-field"><label for="sweep-max">Maximum</label><input id="sweep-max" type="number" inputmode="decimal" step="any" value="30"></div>
+          <div class="analysis-field"><label for="sweep-step">Step</label><input id="sweep-step" type="number" inputmode="decimal" step="any" value="1"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="section-label">Fixed parameters</div>
+        <div class="analysis-field-grid">
+          <div class="analysis-field"><label for="sweep-p1">Initial pressure P₁ <span class="analysis-unit">kPa</span></label><input id="sweep-p1" type="number" inputmode="decimal" step="any" value="101"></div>
+          <div class="analysis-field"><label for="sweep-t1">Initial temperature T₁ <span class="analysis-unit">K</span></label><input id="sweep-t1" type="number" inputmode="decimal" step="any" value="300"></div>
+          <div class="analysis-field"><label for="sweep-t3">Maximum temperature T₃ <span class="analysis-unit">K</span></label><input id="sweep-t3" type="number" inputmode="decimal" step="any" value="1400"></div>
+          <div class="analysis-field"><label for="sweep-cp">Specific heat cₚ <span class="analysis-unit">kJ/(kg·K)</span></label><input id="sweep-cp" type="number" inputmode="decimal" step="any" value="1.005"></div>
+          <div class="analysis-field"><label for="sweep-gamma">Specific heat ratio γ</label><input id="sweep-gamma" type="number" inputmode="decimal" step="any" value="1.4"></div>
+        </div>
+        <p class="analysis-copy" style="margin-top:12px;margin-bottom:0">Work is reported per kg, independent of mass flow rate.</p>
+        <button type="button" class="analysis-button" onclick="runAnalysis()">Run analysis</button>
+      </div>
+    </div>
+    <div class="right-col">
+      <div class="error" id="analysis-error" role="alert"></div>
+      <div class="card" id="analysis-empty"><p class="analysis-empty">Set a pressure ratio range and run the analysis to see the results.</p></div>
+      <div id="analysis-results" class="analysis-charts" hidden>
+        <div class="card">
+          <div class="section-label">Thermal efficiency vs pressure ratio</div>
+          <div class="analysis-result-chart"><canvas id="efficiency-canvas" aria-label="Thermal efficiency against pressure ratio" role="img"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="section-label">Net specific work vs pressure ratio</div>
+          <div class="analysis-result-chart"><canvas id="work-canvas" aria-label="Net specific work against pressure ratio" role="img"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="section-label">Key results</div>
+          <div class="analysis-metrics">
+            <div class="metric"><div class="mlabel" id="sweep-eff-label">Highest thermal efficiency</div><div class="mval teal" id="sweep-best-eff">—</div></div>
+            <div class="metric"><div class="mlabel">Maximum net specific work</div><div class="mval blue" id="sweep-best-work">—</div></div>
+            <div class="metric"><div class="mlabel">Pressure ratio range</div><div class="mval" id="sweep-range">—</div></div>
+            <div class="metric"><div class="mlabel">Simulated points</div><div class="mval" id="sweep-count">—</div></div>
+          </div>
+        </div>
+        <div class="card"><div class="section-label">Engineering insight</div><p class="analysis-note" id="sweep-insight"></p></div>
+      </div>
+    </div>
+  </section>
 </div>
 
 <script>
@@ -412,6 +517,11 @@ let activePreset = null;
 let tsChart      = null;
 let pvChart      = null;
 let updateTimer  = null;
+let cycleFamily  = null;
+let analysisMode = 'calculator';
+let efficiencyChart = null;
+let specificWorkChart = null;
+let syncedCalculatorSignature = null;
 
 /* ════════════════════════════════════════════════════
    SLIDER ↔ NUMBER SYNC
@@ -463,16 +573,19 @@ function loadPreset(name) {
   setParam('g-gamma', 'num-gamma', p.gamma, 2);
   setParam('g-m',     'num-m',     p.m,     1);
   activePreset = name;
+  cycleFamily = name;
   document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
   const btn = document.getElementById('pre-' + name);
   if (btn) btn.classList.add('active');
+  refreshModeAvailability();
+  if (name === 'brayton') syncAnalysisInputs(true);
   renderUI();
 }
 
 function clearPreset() {
-  if (!activePreset) return;
   activePreset = null;
   document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+  refreshModeAvailability();
 }
 
 /* ════════════════════════════════════════════════════
@@ -621,14 +734,14 @@ function gasProps(cp, gamma) {
  *
  * Returns array of { P, T, v } — unresolvable values remain null.
  */
-function solveStates(cp, gamma) {
-  const n     = points.length;
+function solveStates(cp, gamma, inputPoints = points, inputProcs = procs) {
+  const n     = inputPoints.length;
   const props = gasProps(cp, gamma);
   if (!props) throw new Error('Invalid gas properties (cp or γ out of range)');
   const { R } = props;
 
   // Initialise from user input; clamp to physical bounds immediately
-  const s = points.map(p => ({
+  const s = inputPoints.map(p => ({
     P: p.P != null ? Math.max(LIMITS.P.min, Math.min(LIMITS.P.max, +p.P)) : null,
     T: p.T != null ? Math.max(LIMITS.T.min, Math.min(LIMITS.T.max, +p.T)) : null,
     v: null,
@@ -655,8 +768,8 @@ function solveStates(cp, gamma) {
     const f  = s[i], t = s[j];
     if (f.P == null || f.T == null) return;
 
-    const tp = procs[i].type;
-    const pn = (procs[i].n != null && isFinite(procs[i].n)) ? procs[i].n : 1.3;
+    const tp = inputProcs[i].type;
+    const pn = (inputProcs[i].n != null && isFinite(inputProcs[i].n)) ? inputProcs[i].n : 1.3;
 
     switch (tp) {
       case 'isentropic': {
@@ -718,8 +831,8 @@ function solveStates(cp, gamma) {
     const f  = s[i], t = s[j];
     if (t.P == null || t.T == null) return;
 
-    const tp = procs[i].type;
-    const pn = (procs[i].n != null && isFinite(procs[i].n)) ? procs[i].n : 1.3;
+    const tp = inputProcs[i].type;
+    const pn = (inputProcs[i].n != null && isFinite(inputProcs[i].n)) ? inputProcs[i].n : 1.3;
 
     switch (tp) {
       case 'isentropic': {
@@ -808,7 +921,7 @@ function solveStates(cp, gamma) {
  * FIX (BUG 3): Isothermal work is now properly tallied in Wt/Wc.
  *   w = q = −R·T·ln(P₂/P₁)  (first law: ΔU = 0 for isothermal ideal gas)
  */
-function computeHeatWork(states, cp, gamma, m) {
+function computeHeatWork(states, cp, gamma, m, inputProcs = procs) {
   const n     = states.length;
   const props = gasProps(cp, gamma);
   if (!props) return { Qin: 0, Qout: 0, Wnet: 0, Wt: 0, Wc: 0, eta: 0, bwr: 0 };
@@ -822,8 +935,8 @@ function computeHeatWork(states, cp, gamma, m) {
     if (si.T == null || sj.T == null) continue;
     if (!isFinite(si.T) || !isFinite(sj.T)) continue;
 
-    const tp = procs[i].type;
-    const pn = (procs[i].n != null && isFinite(procs[i].n)) ? procs[i].n : 1.3;
+    const tp = inputProcs[i].type;
+    const pn = (inputProcs[i].n != null && isFinite(inputProcs[i].n)) ? inputProcs[i].n : 1.3;
     const dT = sj.T - si.T;
     let q = 0, w = 0;
 
@@ -1411,6 +1524,214 @@ function update() {
   refreshCharts(buildTsDatasets(states, sOff), buildPvDatasets(states, gamma));
   renderLegend('ts-legend');
   renderLegend('pv-legend');
+}
+
+/* Brayton analysis uses the existing state solver and heat/work engine. */
+function isBraytonTopology() {
+  return cycleFamily === 'brayton' && points.length === 4 &&
+    procs.length === 4 &&
+    ['isentropic', 'isobaric', 'isentropic', 'isobaric']
+      .every((type, i) => procs[i].type === type);
+}
+
+function refreshModeAvailability() {
+  const supported = isBraytonTopology();
+  document.getElementById('mode-row').hidden = !supported;
+  if (!supported && analysisMode === 'analysis') setMode('calculator');
+}
+
+function setMode(mode) {
+  if (mode === 'analysis' && !isBraytonTopology()) return;
+  analysisMode = mode;
+  const analyzing = mode === 'analysis';
+  document.getElementById('calculator-view').hidden = analyzing;
+  document.getElementById('analysis-view').hidden = !analyzing;
+  for (const name of ['calculator', 'analysis']) {
+    const button = document.getElementById('mode-' + name);
+    button.classList.toggle('active', mode === name);
+    button.setAttribute('aria-pressed', String(mode === name));
+  }
+  if (analyzing) {
+    syncAnalysisInputs();
+    requestAnimationFrame(() => {
+      if (efficiencyChart) efficiencyChart.resize();
+      if (specificWorkChart) specificWorkChart.resize();
+    });
+  } else {
+    requestAnimationFrame(() => {
+      if (tsChart) tsChart.resize();
+      if (pvChart) pvChart.resize();
+    });
+  }
+}
+
+function setAnalysisError(message) {
+  const error = document.getElementById('analysis-error');
+  error.textContent = message;
+  error.style.display = message ? 'block' : 'none';
+}
+
+function invalidateAnalysis() {
+  document.getElementById('analysis-results').hidden = true;
+  document.getElementById('analysis-empty').hidden = false;
+  document.querySelector('#analysis-empty p').textContent =
+    'Run analysis to calculate results for these inputs.';
+  setAnalysisError('');
+}
+
+function syncAnalysisInputs(force = false) {
+  const source = {
+    'sweep-p1': points[0]?.P,
+    'sweep-t1': points[0]?.T,
+    'sweep-t3': points[2]?.T,
+    'sweep-cp': document.getElementById('num-cp').value,
+    'sweep-gamma': document.getElementById('num-gamma').value,
+  };
+  const signature = JSON.stringify(source);
+  if (!force && signature === syncedCalculatorSignature) return;
+  syncedCalculatorSignature = signature;
+  let changed = false;
+  for (const [id, value] of Object.entries(source)) {
+    const input = document.getElementById(id);
+    const next = value == null ? '' : String(value);
+    if (input.value !== next) { input.value = next; changed = true; }
+  }
+  if (changed) invalidateAnalysis();
+}
+
+document.querySelectorAll('#analysis-view input').forEach(input => {
+  input.addEventListener('input', invalidateAnalysis);
+});
+
+function analysisNumber(id) {
+  const value = document.getElementById(id).value.trim();
+  return value === '' ? NaN : Number(value);
+}
+
+function validateSweep() {
+  const min = analysisNumber('sweep-min');
+  const max = analysisNumber('sweep-max');
+  const step = analysisNumber('sweep-step');
+  const P1 = analysisNumber('sweep-p1');
+  const T1 = analysisNumber('sweep-t1');
+  const T3 = analysisNumber('sweep-t3');
+  const cp = analysisNumber('sweep-cp');
+  const gamma = analysisNumber('sweep-gamma');
+  if (![min, max, step, P1, T1, T3, cp, gamma].every(Number.isFinite))
+    throw new Error('Enter a valid number in every field.');
+  if (min <= 1 || max <= min) throw new Error('Use a minimum pressure ratio greater than 1 and a maximum greater than the minimum.');
+  if (step <= 0) throw new Error('Step must be greater than zero.');
+  if (P1 < LIMITS.P.min || P1 > LIMITS.P.max || P1 * max > LIMITS.P.max)
+    throw new Error('Pressure exceeds the calculator limit; lower P₁ or the maximum pressure ratio.');
+  if (T1 < LIMITS.T.min || T3 > LIMITS.T.max || T3 <= T1)
+    throw new Error('Set T₁ above 0 K and T₃ greater than T₁, within the calculator limits.');
+  if (cp < 0.1 || gamma < 1.01)
+    throw new Error('Use cₚ ≥ 0.1 kJ/(kg·K) and γ ≥ 1.01.');
+  const maxPhysicalRatio = Math.pow(T3 / T1, gamma / (gamma - 1));
+  if (!Number.isFinite(maxPhysicalRatio) || max >= maxPhysicalRatio * (1 - 1e-10))
+    throw new Error('At the maximum pressure ratio, compressor exit temperature must stay below T₃. Lower the ratio or raise T₃.');
+  const intervals = Math.floor((max - min) / step + 1e-10);
+  if (!Number.isFinite(intervals) || intervals > 299)
+    throw new Error('This range has too many samples. Increase the step (maximum 301 points).');
+  const ratios = Array.from({ length: intervals + 1 }, (_, i) => i === 0 ? min : min + i * step);
+  if (max - ratios[ratios.length - 1] > 1e-9 * Math.max(1, max)) ratios.push(max);
+  else ratios[ratios.length - 1] = max;
+  return { ratios, min, max, P1, T1, T3, cp, gamma };
+}
+
+function calculateBraytonSweep({ ratios, P1, T1, T3, cp, gamma }) {
+  const processes = ['isentropic', 'isobaric', 'isentropic', 'isobaric']
+    .map(type => ({ type, n: null }));
+  return ratios.map(ratio => {
+    const P2 = P1 * ratio;
+    const states = solveStates(cp, gamma, [
+      { P: P1, T: T1 }, { P: P2, T: null },
+      { P: P2, T: T3 }, { P: P1, T: null },
+    ], processes);
+    if (states.some(state => !Number.isFinite(state.T) || !Number.isFinite(state.P)))
+      throw new Error('The state solver could not determine every state for this range.');
+    // One kilogram through the same engine gives the calculator's specific values.
+    const metrics = computeHeatWork(states, cp, gamma, 1, processes);
+    if (!(metrics.Qin > 0) || !Number.isFinite(metrics.eta) || !Number.isFinite(metrics.Wnet))
+      throw new Error('A sampled cycle has no valid heat input. Check the pressure ratio and temperatures.');
+    return { ratio, efficiency: metrics.eta * 100, specificWork: metrics.Wnet, states, metrics };
+  });
+}
+
+function drawSweepChart(existing, id, dataset, yLabel, unit, optimumIndex, color) {
+  const options = makeChartOpts('Pressure ratio, rₚ', yLabel);
+  options.scales.x.ticks.callback = value => String(Number(Number(value).toPrecision(12)));
+  options.animation = false;
+  options.interaction = { mode: 'nearest', intersect: false };
+  options.plugins.tooltip = {
+    displayColors: false,
+    callbacks: {
+      title: items => 'Pressure ratio: ' + Number(items[0].parsed.x.toFixed(5)),
+      label: item => `${yLabel}: ${item.parsed.y.toFixed(2)} ${unit}`,
+    },
+  };
+  const series = [{
+    data: dataset, parsing: false, borderColor: color, backgroundColor: color,
+    borderWidth: 2.5, tension: 0.2, cubicInterpolationMode: 'monotone',
+    pointRadius: context => context.dataIndex === optimumIndex ? 5 : 2.5,
+    pointHoverRadius: 6, pointBorderWidth: 1, pointBackgroundColor: color,
+  }];
+  if (existing) {
+    existing.data.datasets = series;
+    existing.options = options;
+    existing.update('none');
+    existing.resize();
+    return existing;
+  }
+  return new Chart(document.getElementById(id), { type: 'line', data: { datasets: series }, options });
+}
+
+function runAnalysis() {
+  setAnalysisError('');
+  try {
+    const config = validateSweep();
+    const data = calculateBraytonSweep(config);
+    const bestEfficiency = data.reduce((a, b) => b.efficiency > a.efficiency ? b : a);
+    const bestWork = data.reduce((a, b) => b.specificWork > a.specificWork ? b : a);
+    const efficiencyIndex = data.indexOf(bestEfficiency);
+    const workIndex = data.indexOf(bestWork);
+    const efficiencyAtBoundary = efficiencyIndex === 0 || efficiencyIndex === data.length - 1;
+    const workAtBoundary = workIndex === 0 || workIndex === data.length - 1;
+    document.getElementById('sweep-eff-label').textContent =
+      efficiencyAtBoundary ? 'Highest efficiency in sampled range' : 'Maximum thermal efficiency';
+    document.getElementById('sweep-best-eff').textContent =
+      `${bestEfficiency.efficiency.toFixed(2)}% at rₚ = ${Number(bestEfficiency.ratio.toFixed(5))}`;
+    document.getElementById('sweep-best-work').textContent =
+      `${bestWork.specificWork.toFixed(1)} kJ/kg at rₚ = ${Number(bestWork.ratio.toFixed(5))}`;
+    document.getElementById('sweep-range').textContent = `${config.min} – ${config.max}`;
+    document.getElementById('sweep-count').textContent = String(data.length);
+    const efficiencyRatio = Number(bestEfficiency.ratio.toFixed(5));
+    const workRatio = Number(bestWork.ratio.toFixed(5));
+    const efficiencyInsight = !efficiencyAtBoundary
+      ? `Thermal efficiency reaches an interior sampled maximum at rₚ = ${efficiencyRatio}.`
+      : efficiencyIndex === data.length - 1 && bestEfficiency.efficiency > data[efficiencyIndex - 1].efficiency
+        ? `Thermal efficiency is still increasing at the upper boundary of the sampled range (rₚ = ${efficiencyRatio}).`
+        : `The highest sampled efficiency occurs at the ${efficiencyIndex === 0 ? 'lower' : 'upper'} boundary (rₚ = ${efficiencyRatio}).`;
+    const workInsight = workAtBoundary
+      ? `The highest sampled net specific work occurs at the ${workIndex === 0 ? 'lower' : 'upper'} boundary (rₚ = ${workRatio}).`
+      : `Net specific work reaches an interior sampled maximum at rₚ = ${workRatio}.`;
+    document.getElementById('sweep-insight').textContent = `${efficiencyInsight} ${workInsight}`;
+
+    if (typeof Chart === 'undefined') throw new Error('Charts could not load. Check the connection and refresh the page.');
+    document.getElementById('analysis-empty').hidden = true;
+    document.getElementById('analysis-results').hidden = false;
+    const colors = getComputedStyle(document.documentElement);
+    efficiencyChart = drawSweepChart(efficiencyChart, 'efficiency-canvas',
+      data.map(p => ({ x: p.ratio, y: p.efficiency })), 'Thermal efficiency', '%',
+      efficiencyIndex, colors.getPropertyValue('--teal').trim());
+    specificWorkChart = drawSweepChart(specificWorkChart, 'work-canvas',
+      data.map(p => ({ x: p.ratio, y: p.specificWork })), 'Net specific work', 'kJ/kg',
+      workIndex, colors.getPropertyValue('--blue').trim());
+  } catch (error) {
+    document.getElementById('analysis-results').hidden = true;
+    document.getElementById('analysis-empty').hidden = false;
+    setAnalysisError(error.message);
+  }
 }
 
 /* ── Bootstrap ── */
